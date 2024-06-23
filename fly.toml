@@ -1,0 +1,25 @@
+# fly.toml app configuration file generated for fullstack3-fragrant-tree-7821 on 2024-06-23T17:50:49+03:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'fullstack3-fragrant-tree-7821'
+primary_region = 'ams'
+
+[build]
+
+[env]
+  PORT = "3000" # add this
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1

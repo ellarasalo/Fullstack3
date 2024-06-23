@@ -1,8 +1,11 @@
 const express = require('express');
 const morgan = require('morgan');
-const app = express();
-const PORT = 3001;
+const cors = require('cors');
 
+const app = express();
+const PORT = process.env.PORT || 3000;  // Ensure PORT is taken from environment variables first
+
+app.use(cors());
 app.use(express.json());
 app.use(morgan('tiny'));
 
@@ -13,67 +16,66 @@ let persons = [
   { id: 4, name: 'Mary Poppendieck', number: '39-23-6423122' }
 ];
 
+// Routes
 app.get('/api/persons', (req, res) => {
+  console.log("Fetching all persons");
   res.json(persons);
 });
 
 app.get('/info', (req, res) => {
-    const date = new Date();  
-    const info = `Phonebook has info for ${persons.length} people`;
-    res.send(`<p>${info}</p><p>${date}</p>`);
-  });
+  const date = new Date();  
+  const info = `Phonebook has info for ${persons.length} people`;
+  res.send(`<p>${info}</p><p>${date}</p>`);
+});
 
-  app.get('/api/persons/:id', (req, res) => {
-    const id = Number(req.params.id); 
-    const person = persons.find(p => p.id === id);
+app.get('/api/persons/:id', (req, res) => {
+  const id = Number(req.params.id);
+  const person = persons.find(p => p.id === id);
   
-    if (person) {
-      res.json(person);
-    } else {
-      res.status(404).end();
-    }
-  });
-
-  app.delete('/api/persons/:id', (req, res) => {
-    const id = Number(req.params.id); 
-    const initialLength = persons.length;
-    persons = persons.filter(person => person.id !== id); 
-  
-    if (persons.length < initialLength) {
-      res.status(204).end(); 
-    } else {
-      res.status(404).end(); 
-    }
-  });
-  
-  app.post('/api/persons', (req, res) => {
-    const body = req.body;
-  
- 
-    if (!body.name || !body.number) {
-      return res.status(400).json({ error: 'name or number is missing' });
-    }
-
-    if (persons.find(p => p.name === body.name)) {
-      return res.status(400).json({ error: 'name must be unique' });
-    }
-  
-    const id = Math.floor(Math.random() * 1000000);
-  
-    const person = {
-      id: id,
-      name: body.name,
-      number: body.number
-    };
-  
-    persons.push(person);
-  
+  if (person) {
     res.json(person);
-  });
-  
-  
-  
+  } else {
+    res.status(404).end();
+  }
+});
 
-app.listen(PORT, () => {
+app.delete('/api/persons/:id', (req, res) => {
+  const id = Number(req.params.id);
+  const initialLength = persons.length;
+  persons = persons.filter(person => person.id !== id);
+  
+  if (persons.length < initialLength) {
+    res.status(204).end(); 
+  } else {
+    res.status(404).end(); 
+  }
+});
+
+app.post('/api/persons', (req, res) => {
+  const body = req.body;
+
+  if (!body.name || !body.number) {
+    return res.status(400).json({ error: 'name or number is missing' });
+  }
+
+  if (persons.find(p => p.name === body.name)) {
+    return res.status(400).json({ error: 'name must be unique' });
+  }
+
+  const id = Math.floor(Math.random() * 1000000);
+
+  const person = {
+    id: id,
+    name: body.name,
+    number: body.number
+  };
+
+  persons.push(person);
+
+  res.json(person);
+});
+
+// Correct listening setup
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });
