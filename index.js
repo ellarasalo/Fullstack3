@@ -8,6 +8,7 @@ const PORT = process.env.PORT || 3000;  // Ensure PORT is taken from environment
 app.use(cors());
 app.use(express.json());
 app.use(morgan('tiny'));
+app.use(express.static('dist'))
 
 let persons = [
   { id: 1, name: 'Artoooo Hellas', number: '040-123456' },
