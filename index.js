@@ -1,57 +1,78 @@
+require('dotenv').config();
 const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
+const Person = require('./models/person');
 
 const app = express();
-const PORT = process.env.PORT || 3000;  // Ensure PORT is taken from environment variables first
+const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
 app.use(morgan('tiny'));
-app.use(express.static('dist'))
+app.use(express.static('dist'));
 
-let persons = [
-  { id: 1, name: 'Artoooo Hellas', number: '040-123456' },
-  { id: 2, name: 'Ada Lovelace', number: '39-44-5323523' },
-  { id: 3, name: 'Dan Abramov', number: '12-43-234345' },
-  { id: 4, name: 'Mary Poppendieck', number: '39-23-6423122' }
-];
-
-// Routes
-app.get('/api/persons', (req, res) => {
-  console.log("Fetching all persons");
-  res.json(persons);
+// Hakee kaikki henkilöt tietokannasta
+app.get('/api/persons', (request, response) => {
+  Person.find({})
+    .then(persons => {
+      response.json(persons);
+    })
+    .catch(error => {
+      console.error('Error fetching persons:', error.message);
+      response.status(500).json({ error: 'Internal server error' });
+    });
 });
 
+// Näyttää puhelinluettelossa olevien henkilöiden määrän ja nykyisen päivämäärän
 app.get('/info', (req, res) => {
-  const date = new Date();  
-  const info = `Phonebook has info for ${persons.length} people`;
-  res.send(`<p>${info}</p><p>${date}</p>`);
+  Person.find({})
+    .then(persons => {
+      const date = new Date();
+      const info = `Phonebook has info for ${persons.length} people`;
+      res.send(`<p>${info}</p><p>${date}</p>`);
+    })
+    .catch(error => {
+      console.error('Error fetching persons:', error.message);
+      res.status(500).json({ error: 'Internal server error' });
+    });
 });
 
+// Hakee tietyn henkilön ID:n perusteella
 app.get('/api/persons/:id', (req, res) => {
-  const id = Number(req.params.id);
-  const person = persons.find(p => p.id === id);
-  
-  if (person) {
-    res.json(person);
-  } else {
-    res.status(404).end();
-  }
+  const id = req.params.id;
+  Person.findById(id)
+    .then(person => {
+      if (person) {
+        res.json(person);
+      } else {
+        res.status(404).end();
+      }
+    })
+    .catch(error => {
+      console.error('Error fetching person:', error.message);
+      res.status(500).json({ error: 'Internal server error' });
+    });
 });
 
+// Poistaa tietyn henkilön ID:n perusteella
 app.delete('/api/persons/:id', (req, res) => {
-  const id = Number(req.params.id);
-  const initialLength = persons.length;
-  persons = persons.filter(person => person.id !== id);
-  
-  if (persons.length < initialLength) {
-    res.status(204).end(); 
-  } else {
-    res.status(404).end(); 
-  }
+  const id = req.params.id;
+  Person.findByIdAndRemove(id)
+    .then(result => {
+      if (result) {
+        res.status(204).end();
+      } else {
+        res.status(404).end();
+      }
+    })
+    .catch(error => {
+      console.error('Error deleting person:', error.message);
+      res.status(500).json({ error: 'Internal server error' });
+    });
 });
 
+// Lisää uuden henkilön tietokantaan
 app.post('/api/persons', (req, res) => {
   const body = req.body;
 
@@ -59,24 +80,21 @@ app.post('/api/persons', (req, res) => {
     return res.status(400).json({ error: 'name or number is missing' });
   }
 
-  if (persons.find(p => p.name === body.name)) {
-    return res.status(400).json({ error: 'name must be unique' });
-  }
-
-  const id = Math.floor(Math.random() * 1000000);
-
-  const person = {
-    id: id,
+  const person = new Person({
     name: body.name,
-    number: body.number
-  };
+    number: body.number,
+  });
 
-  persons.push(person);
-
-  res.json(person);
+  person.save()
+    .then(savedPerson => {
+      res.json(savedPerson);
+    })
+    .catch(error => {
+      console.error('Error saving person:', error.message);
+      res.status(500).json({ error: 'Internal server error' });
+    });
 });
 
-// Correct listening setup
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });
