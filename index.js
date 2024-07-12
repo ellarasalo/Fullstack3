@@ -5,14 +5,13 @@ const cors = require('cors');
 const Person = require('./models/person');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
 app.use(morgan('tiny'));
 app.use(express.static('dist'));
 
-// Hakee kaikki henkilöt tietokannasta
 app.get('/api/persons', (request, response) => {
   Person.find({})
     .then(persons => {
@@ -24,7 +23,6 @@ app.get('/api/persons', (request, response) => {
     });
 });
 
-// Näyttää puhelinluettelossa olevien henkilöiden määrän ja nykyisen päivämäärän
 app.get('/info', (req, res) => {
   Person.find({})
     .then(persons => {
@@ -38,7 +36,6 @@ app.get('/info', (req, res) => {
     });
 });
 
-// Hakee tietyn henkilön ID:n perusteella
 app.get('/api/persons/:id', (req, res) => {
   const id = req.params.id;
   Person.findById(id)
@@ -55,10 +52,9 @@ app.get('/api/persons/:id', (req, res) => {
     });
 });
 
-// Poistaa tietyn henkilön ID:n perusteella
 app.delete('/api/persons/:id', (req, res) => {
   const id = req.params.id;
-  Person.findByIdAndRemove(id)
+  Person.findByIdAndDelete(id)
     .then(result => {
       if (result) {
         res.status(204).end();
@@ -72,7 +68,6 @@ app.delete('/api/persons/:id', (req, res) => {
     });
 });
 
-// Lisää uuden henkilön tietokantaan
 app.post('/api/persons', (req, res) => {
   const body = req.body;
 
@@ -95,6 +90,6 @@ app.post('/api/persons', (req, res) => {
     });
 });
 
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
