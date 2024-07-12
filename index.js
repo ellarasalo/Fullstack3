@@ -12,31 +12,25 @@ app.use(express.json());
 app.use(morgan('tiny'));
 app.use(express.static('dist'));
 
-app.get('/api/persons', (request, response) => {
+app.get('/api/persons', (request, response, next) => {
   Person.find({})
     .then(persons => {
       response.json(persons);
     })
-    .catch(error => {
-      console.error('Error fetching persons:', error.message);
-      response.status(500).json({ error: 'Internal server error' });
-    });
+    .catch(error => next(error));
 });
 
-app.get('/info', (req, res) => {
+app.get('/info', (req, res, next) => {
   Person.find({})
     .then(persons => {
       const date = new Date();
       const info = `Phonebook has info for ${persons.length} people`;
       res.send(`<p>${info}</p><p>${date}</p>`);
     })
-    .catch(error => {
-      console.error('Error fetching persons:', error.message);
-      res.status(500).json({ error: 'Internal server error' });
-    });
+    .catch(error => next(error));
 });
 
-app.get('/api/persons/:id', (req, res) => {
+app.get('/api/persons/:id', (req, res, next) => {
   const id = req.params.id;
   Person.findById(id)
     .then(person => {
@@ -48,11 +42,12 @@ app.get('/api/persons/:id', (req, res) => {
     })
     .catch(error => {
       console.error('Error fetching person:', error.message);
-      res.status(500).json({ error: 'Internal server error' });
+      res.status(400).send({ error: 'malformatted id' });
+      next(error);
     });
 });
 
-app.delete('/api/persons/:id', (req, res) => {
+app.delete('/api/persons/:id', (req, res, next) => {
   const id = req.params.id;
   Person.findByIdAndDelete(id)
     .then(result => {
@@ -62,13 +57,10 @@ app.delete('/api/persons/:id', (req, res) => {
         res.status(404).end();
       }
     })
-    .catch(error => {
-      console.error('Error deleting person:', error.message);
-      res.status(500).json({ error: 'Internal server error' });
-    });
+    .catch(error => next(error));
 });
 
-app.post('/api/persons', (req, res) => {
+app.post('/api/persons', (req, res, next) => {
   const body = req.body;
 
   if (!body.name || !body.number) {
@@ -84,11 +76,22 @@ app.post('/api/persons', (req, res) => {
     .then(savedPerson => {
       res.json(savedPerson);
     })
-    .catch(error => {
-      console.error('Error saving person:', error.message);
-      res.status(500).json({ error: 'Internal server error' });
-    });
+    .catch(error => next(error));
 });
+
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message);
+
+  if (error.name === 'CastError' && error.kind === 'ObjectId') {
+    return response.status(400).send({ error: 'malformatted id' });
+  } else if (error.name === 'ValidationError') {
+    return response.status(400).json({ error: error.message });
+  }
+
+  next(error);
+};
+
+app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
